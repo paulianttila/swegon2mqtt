@@ -1,0 +1,2 @@
+cacheout==0.13.1
+crccheck==1.1
