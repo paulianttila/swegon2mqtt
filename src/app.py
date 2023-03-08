@@ -70,7 +70,7 @@ class MyApp:
 
     def mqtt_message_received(self, topic: str, message: str) -> None:
         if topic == "analyzerMode":
-            self.analyzer_mode = message.lower() in ("yes", "true", "1")
+            self.analyzer_mode = message.lower() in {"yes", "true", "1"}
 
     def do_healthy_check(self) -> bool:
         return self.udp_receiver.is_alive()
@@ -102,8 +102,8 @@ class MyApp:
                 self.handle_data(data)
             except Exception as e:
                 self.received_messages_errors_metric.inc()
-                self.logger.error("Error occured: %s" % e)
-                self.logger.debug("Error occured: %s" % e, exc_info=True)
+                self.logger.error(f"Error occured: {e}")
+                self.logger.debug(f"Error occured: {e}", exc_info=True)
 
         self.logger.debug("UDP receiver stopped")
 
@@ -113,13 +113,12 @@ class MyApp:
         if previousvalue is None:
             self.logger.debug("%s: no cache value available", key)
             publish = True
+        elif value == previousvalue:
+            self.logger.debug(
+                "%s = %s : skip update because of same value", key, value
+            )
         else:
-            if value == previousvalue:
-                self.logger.debug(
-                    "%s = %s : skip update because of same value", key, value
-                )
-            else:
-                publish = True
+            publish = True
 
         if publish:
             self.logger.info("%s = %s", key, value)
@@ -145,7 +144,8 @@ class MyApp:
             msgData,
         ) = struct.unpack(unpackStr, msg)
         self.logger.debug(
-            "firstByte=%02X, destinationAddress=%02X, sourceAddress=%02X, dataLen=%02X, msgType=%02X, msgData=%s",
+            "firstByte=%02X, destinationAddress=%02X"
+            ", sourceAddress=%02X, dataLen=%02X, msgType=%02X, msgData=%s",
             firstByte,
             destinationAddress,
             sourceAddress,
@@ -168,21 +168,17 @@ class MyApp:
                 self.logger.debug("Unsupported first byte received: %02X" % firstByte)
             self.messageCache.set(msgKey, msg)
         else:
-            self.logger.debug("Skip message parsing for msgKey: %s" % msgKey)
+            self.logger.debug(f"Skip message parsing for msgKey: {msgKey}")
 
     def parse_msg21(self, msg):
-        self.logger.debug(
-            "Parse message 0x21, data: %s" % binascii.hexlify(msg).upper()
-        )
+        self.logger.debug(f"Parse message 0x21, data: {binascii.hexlify(msg).upper()}")
         data = bytearray(msg)
         self.publish_value("operatingMode", data[0])
         self.publish_value("unitState", data[1])
         self.publish_value("fanSpeed", data[3] & 0x0F)
 
     def parse_msg71(self, msg):
-        self.logger.debug(
-            "Parse message 0x71, data: %s" % binascii.hexlify(msg).upper()
-        )
+        self.logger.debug(f"Parse message 0x71, data: {binascii.hexlify(msg).upper()}")
         data = bytearray(msg)
         outdoorTemp = ctypes.c_int8(data[0]).value
         supplyTemp = ctypes.c_int8(data[1]).value
@@ -225,9 +221,7 @@ class MyApp:
         self.publish_value("calcExtractEfficiency", calcExtractEfficiency)
 
     def parse_msg73(self, msg):
-        self.logger.debug(
-            "Parse message 0x73, data: %s" % binascii.hexlify(msg).upper()
-        )
+        self.logger.debug(f"Parse message 0x73, data: {binascii.hexlify(msg).upper()}")
         data = bytearray(msg)
 
         self.publish_value("heatingState", (data[0] & 0x01) > 0)
@@ -299,32 +293,32 @@ class MyApp:
                 if self.analyzer_mode:
                     self.analyze_message(msg)
                 self.parse_message(msg)
-            else:
-                if self.analyzer_mode:
-                    self.logger.error(
-                        "CRC FAILURE, PDU: %s, Message: %s, 0x%04X (crcFromMsg) !=0x%04X (calcCrc)",
-                        binascii.hexlify(data).upper(),
-                        binascii.hexlify(msg).upper(),
-                        crcFromMsg,
-                        calcCrc,
-                    )
-                else:
-                    self.logger.debug(
-                        "CRC FAILURE, PDU: %s, Message: %s, 0x%04X (crcFromMsg) !=0x%04X (calcCrc)",
-                        binascii.hexlify(data).upper(),
-                        binascii.hexlify(msg).upper(),
-                        crcFromMsg,
-                        calcCrc,
-                    )
-        else:
-            if self.analyzer_mode:
+            elif self.analyzer_mode:
                 self.logger.error(
-                    "Invalid message received, PDU: %s", binascii.hexlify(data).upper()
+                    "CRC FAILURE, PDU: %s, Message: %s"
+                    ", 0x%04X (crcFromMsg) !=0x%04X (calcCrc)",
+                    binascii.hexlify(data).upper(),
+                    binascii.hexlify(msg).upper(),
+                    crcFromMsg,
+                    calcCrc
                 )
             else:
                 self.logger.debug(
-                    "Invalid message received, PDU: %s", binascii.hexlify(data).upper()
+                    "CRC FAILURE, PDU: %s, Message: %s"
+                    ", 0x%04X (crcFromMsg) !=0x%04X (calcCrc)",
+                    binascii.hexlify(data).upper(),
+                    binascii.hexlify(msg).upper(),
+                    crcFromMsg,
+                    calcCrc
                 )
+        elif self.analyzer_mode:
+            self.logger.error(
+                "Invalid message received, PDU: %s", binascii.hexlify(data).upper()
+            )
+        else:
+            self.logger.debug(
+                "Invalid message received, PDU: %s", binascii.hexlify(data).upper()
+            )
 
     def analyze_message(self, msg):
         unpackStr = "BxBBBBxx{0}s".format(len(msg) - 8)
@@ -361,10 +355,10 @@ class MyApp:
 
         def process_tag(tag, i1, i2, j1, j2):
             CSI = "\033["
-            BLUE = CSI + "1;34m"
-            RED = CSI + "1;31m"
-            GREEN = CSI + "0;32m"
-            NORMAL = CSI + "0;0m"
+            BLUE = f"{CSI}1;34m"
+            RED = f"{CSI}1;31m"
+            GREEN = f"{CSI}0;32m"
+            NORMAL = f"{CSI}0;0m"
             if tag == "replace":
                 return (
                     GREEN
