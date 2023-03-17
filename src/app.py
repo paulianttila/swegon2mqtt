@@ -54,7 +54,7 @@ class MyApp:
             self.analyzer_mode = True
 
     def get_version(self) -> str:
-        return "1.0.0"
+        return "2.0.0"
 
     def stop(self) -> None:
         self.logger.debug("Stopping...")
@@ -380,4 +380,4 @@ class MyApp:
 
 
 if __name__ == "__main__":
-    Framework().start(MyApp(), MyConfig(), blocked=True)
+    Framework().run(MyApp(), MyConfig())
