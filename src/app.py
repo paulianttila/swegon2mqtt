@@ -54,7 +54,7 @@ class MyApp:
             self.analyzer_mode = True
 
     def get_version(self) -> str:
-        return "1.0.0"
+        return "2.0.0"
 
     def stop(self) -> None:
         self.logger.debug("Stopping...")
@@ -88,7 +88,7 @@ class MyApp:
 
     def start(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.bind(("0.0.0.0", self.config["UDP_PORT"]))
+        sock.bind(("0.0.0.0", self.config["UDP_PORT"]))  # nosec
         self.logger.debug("Waiting data from UDP port %d", self.config["UDP_PORT"])
 
         while not self.exit:
@@ -114,9 +114,7 @@ class MyApp:
             self.logger.debug("%s: no cache value available", key)
             publish = True
         elif value == previousvalue:
-            self.logger.debug(
-                "%s = %s : skip update because of same value", key, value
-            )
+            self.logger.debug("%s = %s : skip update because of same value", key, value)
         else:
             publish = True
 
@@ -300,7 +298,7 @@ class MyApp:
                     binascii.hexlify(data).upper(),
                     binascii.hexlify(msg).upper(),
                     crcFromMsg,
-                    calcCrc
+                    calcCrc,
                 )
             else:
                 self.logger.debug(
@@ -309,7 +307,7 @@ class MyApp:
                     binascii.hexlify(data).upper(),
                     binascii.hexlify(msg).upper(),
                     crcFromMsg,
-                    calcCrc
+                    calcCrc,
                 )
         elif self.analyzer_mode:
             self.logger.error(
@@ -382,4 +380,4 @@ class MyApp:
 
 
 if __name__ == "__main__":
-    Framework().start(MyApp(), MyConfig(), blocked=True)
+    Framework().run(MyApp(), MyConfig())
